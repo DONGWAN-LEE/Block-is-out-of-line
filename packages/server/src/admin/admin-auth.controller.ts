@@ -7,6 +7,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse as SwaggerApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ApiResponse } from '../common/dto/response.dto.js';
 import { AdminAuthService } from './admin-auth.service.js';
 import { CurrentAdmin } from './decorators/current-admin.decorator.js';
@@ -14,12 +20,15 @@ import { AdminGoogleLoginDto } from './dto/admin-login.dto.js';
 import { AdminAuthGuard } from './guards/admin-auth.guard.js';
 import { AdminAccount } from './entities/admin-account.entity.js';
 
+@ApiTags('Admin Auth')
 @Controller('admin/auth')
 export class AdminAuthController {
   constructor(private readonly adminAuthService: AdminAuthService) {}
 
   @Post('google')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Admin login with Google id_token' })
+  @SwaggerApiResponse({ status: 400, description: 'Validation error' })
   async googleLogin(
     @Body() dto: AdminGoogleLoginDto,
   ): Promise<ApiResponse<{ accessToken: string; admin: AdminAccount }>> {
@@ -29,6 +38,9 @@ export class AdminAuthController {
 
   @Get('me')
   @UseGuards(AdminAuthGuard)
+  @ApiBearerAuth('admin-jwt')
+  @ApiOperation({ summary: 'Get current admin info' })
+  @SwaggerApiResponse({ status: 401, description: 'Unauthorized' })
   async getCurrentAdmin(
     @CurrentAdmin() admin: AdminAccount,
   ): Promise<ApiResponse<AdminAccount>> {

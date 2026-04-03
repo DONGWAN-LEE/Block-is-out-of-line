@@ -6,6 +6,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse as SwaggerApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ApiResponse } from '../common/dto/response.dto.js';
 import { CurrentPlayer } from '../common/decorators/current-player.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
@@ -17,12 +23,16 @@ import { SocialLoginDto } from './dto/social-login.dto.js';
 import { TokenResponseDto } from './dto/token-response.dto.js';
 import { PlayerAccount } from './entities/player-account.entity.js';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('guest')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Guest login with device UUID' })
+  @SwaggerApiResponse({ status: 201, description: 'JWT tokens returned' })
+  @SwaggerApiResponse({ status: 400, description: 'Validation error' })
   async guestLogin(
     @Body() dto: GuestLoginDto,
   ): Promise<ApiResponse<TokenResponseDto>> {
@@ -32,6 +42,8 @@ export class AuthController {
 
   @Post('social')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Social login (Google/Facebook/Naver)' })
+  @SwaggerApiResponse({ status: 400, description: 'Validation error' })
   async socialLogin(
     @Body() dto: SocialLoginDto,
   ): Promise<ApiResponse<TokenResponseDto>> {
@@ -41,6 +53,8 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh JWT tokens' })
+  @SwaggerApiResponse({ status: 400, description: 'Validation error' })
   async refreshToken(
     @Body() dto: RefreshTokenDto,
   ): Promise<ApiResponse<TokenResponseDto>> {
@@ -51,6 +65,9 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('player-jwt')
+  @ApiOperation({ summary: 'Logout and revoke refresh tokens' })
+  @SwaggerApiResponse({ status: 401, description: 'Unauthorized' })
   async logout(
     @CurrentPlayer() player: PlayerAccount,
   ): Promise<ApiResponse<null>> {
@@ -61,6 +78,10 @@ export class AuthController {
   @Post('link')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('player-jwt')
+  @ApiOperation({ summary: 'Link guest account to social provider' })
+  @SwaggerApiResponse({ status: 400, description: 'Validation error' })
+  @SwaggerApiResponse({ status: 401, description: 'Unauthorized' })
   async linkAccount(
     @CurrentPlayer() player: PlayerAccount,
     @Body() dto: LinkAccountDto,
