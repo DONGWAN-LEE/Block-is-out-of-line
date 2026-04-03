@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { GoogleAuth } from 'google-auth-library';
 import axios from 'axios';
 
 export interface GooglePlayVerifyResult {
@@ -11,31 +12,38 @@ export interface GooglePlayVerifyResult {
 export class GooglePlayValidator {
   private readonly logger = new Logger(GooglePlayValidator.name);
   private readonly packageName: string;
+  private auth: GoogleAuth | null = null;
 
   constructor(private readonly configService: ConfigService) {
-    this.packageName = this.configService.get<string>(
-      'GOOGLE_PLAY_PACKAGE_NAME',
-      'com.dongwanlee.blockoutline',
-    );
+    this.packageName = this.configService.getOrThrow<string>('GOOGLE_PLAY_PACKAGE_NAME');
+    const keyFile = this.configService.get<string>('GOOGLE_PLAY_SERVICE_ACCOUNT_KEY');
+    if (keyFile) {
+      this.auth = new GoogleAuth({
+        keyFile,
+        scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+      });
+    }
   }
 
   async verify(
     productId: string,
     purchaseToken: string,
   ): Promise<GooglePlayVerifyResult> {
-    // TODO: Obtain an OAuth2 access token using a service account via google-auth-library
-    // and call the Google Play Developer API:
-    // GET https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/purchases/products/{productId}/tokens/{token}
-    // Expected response shape: { purchaseState: 0 (purchased) | 1 (canceled) | 2 (pending), orderId: string, ... }
+    if (!this.auth) {
+      throw new Error('Google Play service account not configured');
+    }
+
     try {
-      // Placeholder: replace with real API call once service account credentials are configured
+      const client = await this.auth.getClient();
+      const tokenResponse = await client.getAccessToken();
+      const accessToken = tokenResponse.token;
+
       const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${this.packageName}/purchases/products/${productId}/tokens/${purchaseToken}`;
       this.logger.debug(`Google Play verify URL: ${url}`);
 
-      // TODO: pass Authorization header with service account access token
       const response = await axios.get<{ purchaseState: number; orderId: string }>(url, {
         headers: {
-          Authorization: `Bearer TODO_SERVICE_ACCOUNT_TOKEN`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 

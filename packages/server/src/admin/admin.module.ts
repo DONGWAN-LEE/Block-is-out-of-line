@@ -40,7 +40,7 @@ import { AdminAuthGuard } from './guards/admin-auth.guard.js';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService): JwtModuleOptions => ({
-        secret: configService.get<string>('ADMIN_JWT_SECRET', 'admin-default-secret'),
+        secret: configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
         signOptions: {
           expiresIn: configService.get('ADMIN_JWT_EXPIRY', '8h') as any,
         },

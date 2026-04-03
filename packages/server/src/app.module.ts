@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TerminusModule } from '@nestjs/terminus';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -40,6 +41,7 @@ import { AdminModule } from './admin/admin.module.js';
       inject: [ConfigService],
     }),
 
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     TerminusModule,
     CurrencyModule,
 
@@ -53,6 +55,10 @@ import { AdminModule } from './admin/admin.module.js';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,

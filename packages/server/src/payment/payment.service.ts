@@ -140,6 +140,9 @@ export class PaymentService {
           em,
         );
 
+        savedLog.receiptData = null;
+        await logRepo.save(savedLog);
+
         return savedLog;
       },
     );

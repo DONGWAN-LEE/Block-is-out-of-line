@@ -46,8 +46,8 @@ export class AdminAuthService {
       );
     }
 
-    const googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID', '');
-    if (googleClientId && tokenInfo.aud !== googleClientId) {
+    const googleClientId = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    if (tokenInfo.aud !== googleClientId) {
       throw new UnauthorizedException(
         ErrorCodes.ADMIN_004.code + ': ' + ErrorCodes.ADMIN_004.message,
       );
@@ -72,10 +72,7 @@ export class AdminAuthService {
     await this.adminRepository.update(admin.id, { lastLoginAt: new Date() });
     admin.lastLoginAt = new Date();
 
-    const secret = this.configService.get<string>(
-      'ADMIN_JWT_SECRET',
-      'admin-default-secret',
-    );
+    const secret = this.configService.getOrThrow<string>('ADMIN_JWT_SECRET');
     const expiresIn = this.configService.get<string>('ADMIN_JWT_EXPIRY', '8h');
 
     const accessToken = this.jwtService.sign(
