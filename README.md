@@ -125,7 +125,7 @@ FACEBOOK_APP_ID=
 NAVER_CLIENT_ID=
 
 # IAP (Google Play, Apple, Toss Game)
-GOOGLE_PLAY_PACKAGE_NAME=com.treenod.blockoutline
+GOOGLE_PLAY_PACKAGE_NAME=com.dongwanlee.blockoutline
 APPLE_SHARED_SECRET=
 TOSS_GAME_API_KEY=
 ```
@@ -174,4 +174,4 @@ npm run lint          # ESLint
 
 ## License
 
-Private - Treenod
+Private - DONGWAN-LEE

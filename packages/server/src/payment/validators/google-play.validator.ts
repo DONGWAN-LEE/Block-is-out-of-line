@@ -15,7 +15,7 @@ export class GooglePlayValidator {
   constructor(private readonly configService: ConfigService) {
     this.packageName = this.configService.get<string>(
       'GOOGLE_PLAY_PACKAGE_NAME',
-      'com.treenod.blockoutline',
+      'com.dongwanlee.blockoutline',
     );
   }
 
