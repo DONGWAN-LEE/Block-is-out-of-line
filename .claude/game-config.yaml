@@ -1,0 +1,67 @@
+# Block is Out of Line — Game Configuration
+# game-harness 파이프라인이 이 파일을 읽어 동적으로 파이프라인을 구성합니다.
+# /game-harness --init 으로 대화형 생성 가능.
+
+project:
+  name: "Block is Out of Line"
+  genre: casual
+  description: "역방향 벽돌깨기. 공이 중력으로 떨어져 벽돌을 깨고 튕겨 올라감. 상단에서 공의 방향만 조절하여 발사. 아래에서 벽돌이 계속 생성되어 올라온다."
+
+platform:
+  backend:
+    framework: nestjs
+    language: typescript
+    port: 4000
+  frontend:
+    engine: unity
+    language: csharp
+  database:
+    primary: postgresql
+    cache: redis
+  communication:
+    primary: rest
+    secondary: none
+  deployment:
+    type: docker
+
+# 게임 시스템 토글
+game_systems:
+  auth: true               # JWT 인증, 게스트 로그인, 소셜 로그인
+  player_profile: true      # 플레이어 닉네임, 레벨, 경험치
+  inventory: true           # 보유 스킨/이펙트 목록
+  gacha: true               # 공 스킨/이펙트 뽑기
+  shop: true                # 인앱결제 상점
+  currency: true            # 다이아(유료), 골드(무료) 재화
+  ranking: true             # 최고 점수 리더보드
+  achievement: false        # (추후 추가 예정)
+  stage: true               # 스테이지/난이도 진행
+  battle: false             # PvP 없음
+  matchmaking: false        # 매칭 없음
+  guild: false              # 길드 없음
+  chat: false               # 채팅 없음
+  social: false             # 소셜 없음
+  push_notification: true   # 일일 보상 알림, 이벤트 알림
+  analytics: true           # 게임 플레이 분석
+  save_system: true         # 클라우드 세이브
+  daily_reward: true        # 출석 보상
+
+# 프로젝트 고유 시스템
+custom_systems:
+  ball_physics:
+    description: "공 물리 시뮬레이션 — 중력 낙하, 벽돌 반사, 속도/각도 계산. 서버에서 결과 검증."
+    guide: "guides/ball-physics.md"
+  brick_spawner:
+    description: "벽돌 생성/상승 시스템 — 난이도별 패턴 생성, 상승 속도, 특수 벽돌 확률."
+    guide: "guides/brick-spawner.md"
+
+# 빌드/테스트 명령어
+commands:
+  typecheck: "npx tsc --noEmit"
+  lint: "npx eslint . --ext .ts"
+  lint_fix: "npx eslint . --ext .ts --fix"
+  test: "npx jest"
+  test_e2e: "npx jest --config jest-e2e.json"
+  build: "npm run build"
+  dev: "npm run start:dev"
+  migration_run: "npx typeorm migration:run -d src/data-source.ts"
+  migration_generate: "npx typeorm migration:generate -d src/data-source.ts"
