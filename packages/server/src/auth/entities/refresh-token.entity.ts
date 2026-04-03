@@ -20,6 +20,9 @@ export class RefreshToken {
   @JoinColumn({ name: 'playerId' })
   player: PlayerAccount;
 
+  @Column({ type: 'varchar', length: 16 })
+  tokenId: string;
+
   @Column({ type: 'varchar' })
   tokenHash: string;
 

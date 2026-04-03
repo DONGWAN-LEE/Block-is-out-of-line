@@ -12,6 +12,7 @@ import {
   ApiResponse as SwaggerApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ApiResponse } from '../common/dto/response.dto.js';
 import { CurrentPlayer } from '../common/decorators/current-player.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
@@ -25,6 +26,7 @@ import { PlayerAccount } from './entities/player-account.entity.js';
 
 @ApiTags('Auth')
 @Controller('auth')
+@Throttle({ default: { ttl: 60000, limit: 10 } })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

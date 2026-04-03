@@ -29,15 +29,18 @@ export class AdminAuthGuard implements CanActivate {
     }
 
     const token = authHeader.slice(7);
-    const secret = this.configService.get<string>(
-      'ADMIN_JWT_SECRET',
-      'admin-default-secret',
-    );
+    const secret = this.configService.getOrThrow<string>('ADMIN_JWT_SECRET');
 
     let payload: { sub: string; role: string; type: string };
     try {
       payload = this.jwtService.verify(token, { secret });
     } catch {
+      throw new UnauthorizedException(
+        ErrorCodes.ADMIN_001.code + ': ' + ErrorCodes.ADMIN_001.message,
+      );
+    }
+
+    if (payload.type !== 'admin_access') {
       throw new UnauthorizedException(
         ErrorCodes.ADMIN_001.code + ': ' + ErrorCodes.ADMIN_001.message,
       );

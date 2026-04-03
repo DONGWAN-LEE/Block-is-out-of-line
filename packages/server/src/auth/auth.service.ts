@@ -79,20 +79,17 @@ export class AuthService {
   }
 
   async refreshToken(dto: RefreshTokenDto): Promise<TokenResponseDto> {
-    const allTokens = await this.refreshTokenRepository.find({
-      where: {},
+    const tokenId = dto.refreshToken.substring(0, 8);
+    const candidate = await this.refreshTokenRepository.findOne({
+      where: { tokenId },
       relations: ['player'],
     });
 
-    let matchedToken: RefreshToken | null = null;
+    const isMatch = candidate
+      ? await bcrypt.compare(dto.refreshToken, candidate.tokenHash)
+      : false;
 
-    for (const token of allTokens) {
-      const isMatch = await bcrypt.compare(dto.refreshToken, token.tokenHash);
-      if (isMatch) {
-        matchedToken = token;
-        break;
-      }
-    }
+    const matchedToken = isMatch ? candidate : null;
 
     if (!matchedToken) {
       throw new UnauthorizedException(
@@ -214,6 +211,7 @@ export class AuthService {
     );
 
     const rawRefreshToken = uuidv4();
+    const tokenId = rawRefreshToken.substring(0, 8);
     const tokenHash = await bcrypt.hash(rawRefreshToken, BCRYPT_ROUNDS);
 
     const expiresAt = new Date();
@@ -221,6 +219,7 @@ export class AuthService {
 
     const refreshTokenEntity = this.refreshTokenRepository.create({
       playerId,
+      tokenId,
       tokenHash,
       expiresAt,
     });

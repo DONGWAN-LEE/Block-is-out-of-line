@@ -22,71 +22,83 @@ export class CouponService {
   ) {}
 
   async redeemCoupon(playerId: string, dto: RedeemCouponDto): Promise<CouponResultDto> {
-    const coupon = await this.couponRepository.findOne({ where: { code: dto.code } });
-    if (!coupon || !coupon.isActive) {
-      throw new HttpException(
-        { code: ErrorCodes.COUPON_001.code, message: ErrorCodes.COUPON_001.message },
-        HttpStatus.NOT_FOUND,
-      );
-    }
+    try {
+      return await this.dataSource.manager.transaction(async (manager) => {
+        const coupon = await manager.getRepository(Coupon).findOne({
+          where: { code: dto.code },
+          lock: { mode: 'pessimistic_write' },
+        });
 
-    if (coupon.expiresAt && coupon.expiresAt < new Date()) {
-      throw new HttpException(
-        { code: ErrorCodes.COUPON_002.code, message: ErrorCodes.COUPON_002.message },
-        HttpStatus.GONE,
-      );
-    }
+        if (!coupon || !coupon.isActive) {
+          throw new HttpException(
+            { code: ErrorCodes.COUPON_001.code, message: ErrorCodes.COUPON_001.message },
+            HttpStatus.NOT_FOUND,
+          );
+        }
 
-    if (coupon.couponType === 'personal' && coupon.targetPlayerId !== playerId) {
-      throw new HttpException(
-        { code: ErrorCodes.COUPON_004.code, message: ErrorCodes.COUPON_004.message },
-        HttpStatus.FORBIDDEN,
-      );
-    }
+        if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+          throw new HttpException(
+            { code: ErrorCodes.COUPON_002.code, message: ErrorCodes.COUPON_002.message },
+            HttpStatus.GONE,
+          );
+        }
 
-    const userRedemptionCount = await this.couponRedemptionRepository.count({
-      where: { couponId: coupon.id, playerId },
-    });
-    if (userRedemptionCount >= coupon.perUserLimit) {
+        if (coupon.couponType === 'personal' && coupon.targetPlayerId !== playerId) {
+          throw new HttpException(
+            { code: ErrorCodes.COUPON_004.code, message: ErrorCodes.COUPON_004.message },
+            HttpStatus.FORBIDDEN,
+          );
+        }
+
+        const userRedemptionCount = await manager.getRepository(CouponRedemption).count({
+          where: { couponId: coupon.id, playerId },
+        });
+        if (userRedemptionCount >= coupon.perUserLimit) {
+          throw new HttpException(
+            { code: ErrorCodes.COUPON_003.code, message: ErrorCodes.COUPON_003.message },
+            HttpStatus.CONFLICT,
+          );
+        }
+
+        if (coupon.maxRedemptions > 0) {
+          const totalRedemptionCount = await manager.getRepository(CouponRedemption).count({
+            where: { couponId: coupon.id },
+          });
+          if (totalRedemptionCount >= coupon.maxRedemptions) {
+            throw new HttpException(
+              { code: ErrorCodes.COUPON_005.code, message: ErrorCodes.COUPON_005.message },
+              HttpStatus.CONFLICT,
+            );
+          }
+        }
+
+        const redemption = manager.getRepository(CouponRedemption).create({
+          couponId: coupon.id,
+          playerId,
+        });
+        await manager.getRepository(CouponRedemption).save(redemption);
+
+        await this.currencyService.credit(
+          playerId,
+          coupon.rewardType,
+          BigInt(coupon.rewardAmount),
+          'coupon_redemption',
+          redemption.id,
+          manager,
+        );
+
+        return {
+          rewardType: coupon.rewardType,
+          rewardAmount: coupon.rewardAmount,
+          message: `Coupon redeemed successfully`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
       throw new HttpException(
         { code: ErrorCodes.COUPON_003.code, message: ErrorCodes.COUPON_003.message },
         HttpStatus.CONFLICT,
       );
     }
-
-    if (coupon.maxRedemptions > 0) {
-      const totalRedemptionCount = await this.couponRedemptionRepository.count({
-        where: { couponId: coupon.id },
-      });
-      if (totalRedemptionCount >= coupon.maxRedemptions) {
-        throw new HttpException(
-          { code: ErrorCodes.COUPON_005.code, message: ErrorCodes.COUPON_005.message },
-          HttpStatus.CONFLICT,
-        );
-      }
-    }
-
-    await this.dataSource.manager.transaction(async (manager) => {
-      const redemption = manager.getRepository(CouponRedemption).create({
-        couponId: coupon.id,
-        playerId,
-      });
-      await manager.getRepository(CouponRedemption).save(redemption);
-
-      await this.currencyService.credit(
-        playerId,
-        coupon.rewardType,
-        BigInt(coupon.rewardAmount),
-        'coupon_redemption',
-        redemption.id,
-        manager,
-      );
-    });
-
-    return {
-      rewardType: coupon.rewardType,
-      rewardAmount: coupon.rewardAmount,
-      message: `Coupon redeemed successfully`,
-    };
   }
 }
