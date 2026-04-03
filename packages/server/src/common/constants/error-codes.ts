@@ -26,6 +26,11 @@ export const ErrorCodes = {
   PAYMENT_004: { code: 'PAYMENT_004', message: 'Receipt verification failed' },
   // Currency
   CURRENCY_001: { code: 'CURRENCY_001', message: 'Insufficient balance' },
+  // Admin
+  ADMIN_001: { code: 'ADMIN_001', message: 'Unauthorized admin access' },
+  ADMIN_002: { code: 'ADMIN_002', message: 'Admin account not found' },
+  ADMIN_003: { code: 'ADMIN_003', message: 'Admin account inactive' },
+  ADMIN_004: { code: 'ADMIN_004', message: 'Invalid Google token' },
 } as const;
 
 export type ErrorCodeKey = keyof typeof ErrorCodes;

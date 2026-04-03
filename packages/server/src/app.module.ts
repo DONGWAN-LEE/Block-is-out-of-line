@@ -18,6 +18,7 @@ import { PlayerModule } from './player/player.module.js';
 import { RewardModule } from './reward/reward.module.js';
 import { CouponModule } from './coupon/coupon.module.js';
 import { PaymentModule } from './payment/payment.module.js';
+import { AdminModule } from './admin/admin.module.js';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { PaymentModule } from './payment/payment.module.js';
     RewardModule,
     CouponModule,
     PaymentModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
